@@ -43,6 +43,8 @@ def close(request, task_id):
     task.completed = True
     task.save()
     return redirect(index)
+
+
 def update(request, task_id):
     try:
         task = Task.objects.get(pk=task_id)
@@ -58,6 +60,7 @@ def update(request, task_id):
         'task': task
     }
     return render(request, 'todo/edit.html', context)
+
 
 def delete_task(request, task_id):
     task = get_object_or_404(Task, id=task_id)
