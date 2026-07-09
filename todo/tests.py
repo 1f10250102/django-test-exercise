@@ -110,6 +110,21 @@ class TodoViewTestCase(TestCase):
 
     def test_detail_get_fail(self):
         client = Client()
-        response = client.get('/1/')
+        response = client.get('/999/')
+        self.assertEqual(response.status_code, 404)
 
+    def test_delete_task_success(self):
+        task = Task(title='delete_test')
+        task.save()
+        
+        client = Client()
+        response = client.get('/delete/{}/'.format(task.pk))
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Task.objects.count(), 0)
+
+    def test_delete_task_fail(self):
+        client = Client()
+        response = client.get('/delete/999/')
+        
         self.assertEqual(response.status_code, 404)
