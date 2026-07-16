@@ -31,6 +31,13 @@ class TaskModelTestCase(TestCase):
         self.assertFalse(task.completed)
         self.assertEqual(task.due_at, None)
 
+    def test_create_task_with_priority(self):
+        task = Task(title='task3', priority=True)
+        task.save()
+
+        task = Task.objects.get(pk=task.pk)
+        self.assertTrue(task.priority)
+
     def test_is_overdue_future(self):
         due = timezone.make_aware(datetime(2024, 6, 30, 23, 59, 59))
         current = timezone.make_aware(datetime(2024, 6, 30, 0, 0, 0))
@@ -72,6 +79,14 @@ class TodoViewTestCase(TestCase):
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(len(response.context['tasks']), 1)
 
+    def test_index_post_with_priority(self):
+        client = Client()
+        data = {'title': 'Prioritized Task', 'due_at': '2024-06-30 23:59:59', 'priority': 'true'}
+        response = client.post('/', data)
+        self.assertEqual(response.status_code, 200)
+        task = Task.objects.get(title='Prioritized Task')
+        self.assertTrue(task.priority)
+
     def test_index_get_order_post(self):
         task1 = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
         task1.save()
@@ -97,6 +112,20 @@ class TodoViewTestCase(TestCase):
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(response.context['tasks'][0], task1)
         self.assertEqual(response.context['tasks'][1], task2)
+
+    def test_index_get_order_priority(self):
+        task1 = Task(title='task1', priority=True)
+        task1.save()
+        task2 = Task(title='task2', priority=False)
+        task2.save()
+        task3 = Task(title='task3')
+        task3.save()
+
+        client = Client()
+        response = client.get('/?order=priority')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.templates[0].name, 'todo/index.html')
+        self.assertEqual(response.context['tasks'][0], task1)
 
     def test_update_get_success(self):
         task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))

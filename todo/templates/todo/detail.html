@@ -17,6 +17,9 @@
         {% if task.due_at %}
         <li>Due at: {{ task.due_at }}</li>
         {% endif %}
+        {% if task.priority %}
+        <li>Priority: High</li>
+        {% endif %}
         {% if task.completed %}
         <li class="status-completed">Status: Completed</li>
         {% else %}
