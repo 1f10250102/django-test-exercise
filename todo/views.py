@@ -8,12 +8,22 @@ from todo.models import Task
 
 def index(request):
     if request.method == 'POST':
+        due_at_raw = request.POST.get('due_at')
+        due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        priority_raw = request.POST.get('priority')
+        priority = priority_raw == 'true'
         task = Task(title=request.POST['title'],
-                    due_at=make_aware(parse_datetime(request.POST['due_at'])))
+                    due_at=due_at,
+                    priority=priority)
         task.save()
 
     if request.GET.get('order') == 'due':
         tasks = Task.objects.order_by('due_at')
+    elif request.GET.get('order') == 'priority':
+        tasks = sorted(
+            Task.objects.all(),
+            key=lambda task: (not task.priority, task.posted_at)
+        )
     else:
         tasks = Task.objects.order_by('-posted_at')
 
@@ -59,7 +69,10 @@ def update(request, task_id):
         raise Http404('Task does not exist')
     if request.method == 'POST':
         task.title = request.POST['title']
-        task.due_at = make_aware(parse_datetime(request.POST['due_at']))
+        due_at_raw = request.POST.get('due_at')
+        task.due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        priority_raw = request.POST.get('priority')
+        task.priority = priority_raw == 'true'
         task.save()
         return redirect(detail, task_id)
     
