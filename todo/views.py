@@ -3,6 +3,7 @@ from django.http import Http404
 from django.utils.timezone import make_aware
 from django.utils.dateparse import parse_datetime
 from todo.models import Task
+from django.db.models import F
 # Create your views here.
 
 
@@ -17,15 +18,17 @@ def index(request):
                     priority=priority)
         task.save()
 
-    if request.GET.get('order') == 'due':
-        tasks = Task.objects.order_by('due_at')
-    elif request.GET.get('order') == 'priority':
-        tasks = sorted(
-            Task.objects.all(),
-            key=lambda task: (not task.priority, task.posted_at)
-        )
-    else:
+    # Default: order by due date (nulls last)
+    order = request.GET.get('order')
+    if order == 'due':
+        tasks = Task.objects.order_by(F('due_at').asc(nulls_last=True))
+    elif order == 'priority':
+        # Group by priority (high first) and within each group sort by due date
+        tasks = Task.objects.order_by(F('priority').desc(), F('due_at').asc(nulls_last=True))
+    elif order == 'post':
         tasks = Task.objects.order_by('-posted_at')
+    else:
+        tasks = Task.objects.order_by(F('due_at').asc(nulls_last=True))
 
     context = {
         'tasks': tasks
