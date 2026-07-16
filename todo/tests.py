@@ -71,6 +71,37 @@ class TodoViewTestCase(TestCase):
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(len(response.context['tasks']), 0)
 
+    def test_index_contains_theme_toggle_button(self):
+        client = Client()
+        response = client.get('/')
+
+        self.assertContains(response, 'id="theme-toggle"')
+        self.assertContains(response, 'Dark Mode')
+        self.assertContains(response, "addEventListener('click', toggleTheme)")
+        self.assertContains(response, "localStorage.setItem('theme', theme);")
+
+    def test_detail_and_edit_pages_apply_saved_theme(self):
+        task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        task.save()
+
+        client = Client()
+        detail_response = client.get(f'/{task.pk}/')
+        edit_response = client.get(f'/{task.pk}/update')
+
+        self.assertNotContains(detail_response, 'id="theme-toggle"')
+        self.assertNotContains(edit_response, 'id="theme-toggle"')
+        self.assertContains(detail_response, "localStorage.getItem('theme')")
+        self.assertContains(detail_response, "classList.toggle('dark-theme'")
+        self.assertContains(edit_response, "localStorage.getItem('theme')")
+        self.assertContains(edit_response, "classList.toggle('dark-theme'")
+
+    def test_index_theme_script_changes_background_color(self):
+        client = Client()
+        response = client.get('/')
+
+        self.assertContains(response, "document.body.style.backgroundColor = isDark ? '#111827' : '#f8f9fa';")
+        self.assertContains(response, "element.style.backgroundColor = isDark ? '#1f2937' : '#ffffff';")
+
     def test_index_post(self):
         client = Client()
         data = {'title': 'Test Task', 'due_at': '2024-06-30 23:59:59'}

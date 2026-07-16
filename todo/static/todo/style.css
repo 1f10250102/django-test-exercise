@@ -5,6 +5,43 @@ body {
   line-height: 1.6;
   color: #333;
   background-color: #f8f9fa;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme {
+  color: #f8f9fa;
+  background-color: #111827;
+}
+
+html.dark-theme body {
+  color: #f8f9fa;
+  background-color: #111827;
+}
+
+body.dark-theme h1,
+html.dark-theme body h1 {
+  color: #f8f9fa;
+}
+
+body.dark-theme h1:first-of-type,
+html.dark-theme body h1:first-of-type {
+  color: #fef3c7;
+}
+
+body.dark-theme form,
+body.dark-theme .text,
+body.dark-theme .detail-card,
+html.dark-theme body form,
+html.dark-theme body .text,
+html.dark-theme body .detail-card {
+  background-color: #1f2937;
+  color: #f8f9fa;
+  box-shadow: 0 2px 6px rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme a,
+html.dark-theme body a {
+  color: #93c5fd;
 }
 
 h1 {
