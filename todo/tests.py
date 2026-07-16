@@ -160,8 +160,9 @@ class TodoViewTestCase(TestCase):
         self.assertFalse(task.completed)
 
         client = Client()
-        response = client.get(f'/{task.pk}/close')
+        response = client.post(f'/{task.pk}/close', {'rating': '3'})
 
         self.assertEqual(response.status_code, 302)
         task.refresh_from_db()
         self.assertTrue(task.completed)
+        self.assertEqual(task.rating, 3)
