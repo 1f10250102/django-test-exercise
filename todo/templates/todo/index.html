@@ -6,6 +6,7 @@
     <title>To Do Application</title>
     <meta charset="UTF-8">
     <meta name="author" content="INIAD">
+    <link rel="stylesheet" href="{% static 'todo/style.css' %}">
   </head>
 
   <body>
@@ -27,6 +28,25 @@
     </form>
     <br>
 
+    {% if messages %}
+    <div class="message-popup">
+      {% for message in messages %}
+      <div class="message {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="progress-card">
+      <div class="progress-header">
+        <strong>達成率</strong>
+        <span>{{ completed_count }}/{{ total_tasks }}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar-fill" data-width="{{ completion_rate }}"></div>
+      </div>
+      <p class="progress-value">{{ completion_rate }}%</p>
+    </div>
+
     <div>
       <a href="{% url 'index' %}?order=due">Sort by Due Date</a> |
       <a href="{% url 'index' %}?order=post">Sort by Posted Date</a>
@@ -35,19 +55,37 @@
     {% for task in tasks %}
     <div class="text">
       <h2><a href="{% url 'detail' task.id %}">{{ task.title }}</a></h2>
+      <div class="task-status-badge">
+        {% if task.completed %}
+        <span class="status-dot done">●</span> 達成済み
+        {% else %}
+        <span class="status-dot pending">○</span> 未達成
+        {% endif %}
+      </div>
       <ul>
         <li>Posted at: {{ task.posted_at }}</li>
-        {% if task.due_at %} 
+        {% if task.due_at %}
         <li>Due at: {{ task.due_at }}</li>
         {% endif %}
-        {% if task.completed %} 
-        <li>Status: Completed</li>
+        {% if task.completed %}
+        <li class="status-completed">Status: Completed</li>
         {% else %}
-        <li>Status: Not Completed</li>
+        <li class="status-not-completed">Status: Not Completed</li>
         {% endif %}
       </ul>
     </div>
     {% endfor %}
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.progress-bar-fill[data-width]').forEach(function (bar) {
+          var width = bar.getAttribute('data-width');
+          if (width) {
+            bar.style.width = width + '%';
+          }
+        });
+      });
+    </script>
   </body>
 
 </html>
