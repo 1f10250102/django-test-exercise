@@ -21,8 +21,11 @@ def index(request):
     else:
         tasks = Task.objects.order_by('-posted_at')
 
+    for task in tasks:
+        setattr(task, 'rating_value', request.session.get(f'task_rating_{task.id}', None))
+
     context = {
-        'tasks': tasks
+        'tasks': tasks,
     }
     return render(request, 'todo/index.html', context)
 

@@ -43,6 +43,7 @@
         {% endif %}
         {% if task.completed %} 
         <li class="status-completed">Status: Completed</li>
+        <li>Self Evaluation: {{ task.rating_value }}★</li>
         {% else %}
         <li class="status-not-completed">Status: Not Completed</li>
         {% endif %}
