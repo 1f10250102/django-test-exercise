@@ -35,14 +35,14 @@
       {% if not task.completed and show_close_form %}
       <form method="post" action="{% url 'close' task.id %}">
         {% csrf_token %}
-        <p>自己評価をしてください。</p>
+        <p>Please conduct a self-evaluation.</p>
         {% for value in ratings %}
         <label>
           <input type="radio" name="rating" value="{{ value }}">
           {{ value }}
         </label>
         {% endfor %}
-        <button type="submit">完了</button>
+        <button type="submit">completion</button>
       </form>
       {% endif %}
     </div>
