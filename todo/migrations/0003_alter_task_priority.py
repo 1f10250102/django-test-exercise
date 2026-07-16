@@ -3,6 +3,24 @@
 from django.db import migrations, models
 
 
+def convert_priority_to_boolean(apps, schema_editor):
+    # Only run raw SQL on PostgreSQL; SQLite and others don't support ALTER ... TYPE
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    schema_editor.execute(
+        "ALTER TABLE todo_task ALTER COLUMN priority TYPE boolean USING ("
+        "CASE WHEN priority IS NULL THEN FALSE WHEN priority = 0 THEN FALSE ELSE TRUE END)"
+    )
+
+
+def convert_priority_to_smallint(apps, schema_editor):
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    schema_editor.execute(
+        "ALTER TABLE todo_task ALTER COLUMN priority TYPE smallint USING (CASE WHEN priority THEN 1 ELSE 0 END)"
+    )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,6 +28,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(convert_priority_to_boolean, convert_priority_to_smallint),
         migrations.AlterField(
             model_name='task',
             name='priority',
