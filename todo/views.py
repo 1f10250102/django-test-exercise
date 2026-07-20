@@ -14,11 +14,19 @@ def index(request):
         task_data = {'title': title}
         if due_value:
             task_data['due_at'] = make_aware(parse_datetime(due_value))
+
+        priority_raw = request.POST.get('priority')
+        task_data['priority'] = priority_raw == 'true'
         task = Task(**task_data)
         task.save()
 
     if request.GET.get('order') == 'due':
         tasks = Task.objects.order_by('due_at')
+    elif request.GET.get('order') == 'priority':
+        tasks = sorted(
+            Task.objects.all(),
+            key=lambda task: (not task.priority, task.posted_at)
+        )
     else:
         tasks = Task.objects.order_by('-posted_at')
 
@@ -57,6 +65,7 @@ def close(request, task_id):
     messages.success(request, '達成！おめでとうございます。')
     return redirect('index')
 
+
 def delete(request, task_id):
     try:
         task = Task.objects.get(pk=task_id)
@@ -65,6 +74,7 @@ def delete(request, task_id):
     task.delete()
     return redirect(index)
 
+
 def update(request, task_id):
     try:
         task = Task.objects.get(pk=task_id)
@@ -72,10 +82,13 @@ def update(request, task_id):
         raise Http404('Task does not exist')
     if request.method == 'POST':
         task.title = request.POST['title']
-        task.due_at = make_aware(parse_datetime(request.POST['due_at']))
+        due_at_raw = request.POST.get('due_at')
+        task.due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        priority_raw = request.POST.get('priority')
+        task.priority = priority_raw == 'true'
         task.save()
         return redirect(detail, task_id)
-    
+
     context = {
         'task': task
     }
