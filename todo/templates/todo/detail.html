@@ -17,6 +17,9 @@
         {% if task.due_at %}
         <li>Due at: {{ task.due_at }}</li>
         {% endif %}
+        {% if task.priority %}
+        <li>Priority: High</li>
+        {% endif %}
         {% if task.completed %}
         <li class="status-completed">Status: Completed</li>
         <li>Self Evaluation: {{ rating_value }}★</li>
@@ -46,6 +49,19 @@
       </form>
       {% endif %}
     </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        const isDark = savedTheme === 'dark';
+        document.body.classList.toggle('dark-theme', isDark);
+        document.documentElement.classList.toggle('dark-theme', isDark);
+        document.body.style.backgroundColor = isDark ? '#111827' : '#f8f9fa';
+        document.body.style.color = isDark ? '#f8f9fa' : '#333';
+        document.documentElement.style.backgroundColor = isDark ? '#111827' : '#f8f9fa';
+        document.documentElement.style.color = isDark ? '#f8f9fa' : '#333';
+      });
+    </script>
   </body>
 
 </html>
