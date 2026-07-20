@@ -3,6 +3,32 @@
 from django.db import migrations, models
 
 
+def convert_priority_to_boolean(apps, schema_editor):
+    # Only run raw SQL on PostgreSQL; SQLite and others don't support ALTER ... TYPE
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    # Safer sequence: add a temporary boolean column, copy values, drop old column, rename.
+    schema_editor.execute("ALTER TABLE todo_task ADD COLUMN priority_tmp boolean;")
+    schema_editor.execute(
+        "UPDATE todo_task SET priority_tmp = (CASE WHEN priority IS NULL THEN FALSE WHEN priority = 0 THEN FALSE ELSE TRUE END);"
+    )
+    schema_editor.execute("ALTER TABLE todo_task DROP COLUMN priority;")
+    schema_editor.execute("ALTER TABLE todo_task RENAME COLUMN priority_tmp TO priority;")
+    schema_editor.execute("ALTER TABLE todo_task ALTER COLUMN priority SET DEFAULT FALSE;")
+
+
+def convert_priority_to_smallint(apps, schema_editor):
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    # Reverse: recreate smallint column from boolean
+    schema_editor.execute("ALTER TABLE todo_task ADD COLUMN priority_tmp smallint;")
+    schema_editor.execute(
+        "UPDATE todo_task SET priority_tmp = (CASE WHEN priority THEN 1 ELSE 0 END);"
+    )
+    schema_editor.execute("ALTER TABLE todo_task DROP COLUMN priority;")
+    schema_editor.execute("ALTER TABLE todo_task RENAME COLUMN priority_tmp TO priority;")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,6 +36,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(convert_priority_to_boolean, convert_priority_to_smallint),
         migrations.AlterField(
             model_name='task',
             name='priority',
