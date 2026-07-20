@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
 from django.utils.timezone import make_aware
@@ -9,13 +10,15 @@ from django.db.models import F
 
 def index(request):
     if request.method == 'POST':
-        due_at_raw = request.POST.get('due_at')
-        due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        title = request.POST.get('title', '').strip()
+        due_value = request.POST.get('due_at')
+        task_data = {'title': title}
+        if due_value:
+            task_data['due_at'] = make_aware(parse_datetime(due_value))
+
         priority_raw = request.POST.get('priority')
-        priority = priority_raw == 'true'
-        task = Task(title=request.POST['title'],
-                    due_at=due_at,
-                    priority=priority)
+        task_data['priority'] = priority_raw == 'true'
+        task = Task(**task_data)
         task.save()
 
     # Default: order by due date (nulls last)
@@ -30,8 +33,15 @@ def index(request):
     else:
         tasks = Task.objects.order_by(F('due_at').asc(nulls_last=True))
 
+    total_tasks = Task.objects.count()
+    completed_count = Task.objects.filter(completed=True).count()
+    completion_rate = int(completed_count / total_tasks * 100) if total_tasks else 0
+
     context = {
-        'tasks': tasks
+        'tasks': tasks,
+        'total_tasks': total_tasks,
+        'completed_count': completed_count,
+        'completion_rate': completion_rate,
     }
     return render(request, 'todo/index.html', context)
 
@@ -55,7 +65,9 @@ def close(request, task_id):
         raise Http404("Task does not exist")
     task.completed = True
     task.save()
-    return redirect(index)
+    messages.success(request, '達成！おめでとうございます。')
+    return redirect('index')
+
 
 def delete(request, task_id):
     try:
@@ -64,6 +76,7 @@ def delete(request, task_id):
         raise Http404('Task does not exist')
     task.delete()
     return redirect(index)
+
 
 def update(request, task_id):
     try:
@@ -78,7 +91,7 @@ def update(request, task_id):
         task.priority = priority_raw == 'true'
         task.save()
         return redirect(detail, task_id)
-    
+
     context = {
         'task': task
     }

@@ -3,8 +3,6 @@ from django.utils import timezone
 from datetime import datetime
 from todo.models import Task
 
-# Create your tests here.
-
 
 class SampleTestCase(TestCase):
     def test_sample1(self):
@@ -214,14 +212,41 @@ class TodoViewTestCase(TestCase):
         response = client.get('/1/delete')
         self.assertEqual(response.status_code, 404)
 
-    def test_close_task(self):
+    def test_close_marks_task_completed_and_shows_completion_message(self):
         task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
         task.save()
-        self.assertFalse(task.completed)
-
         client = Client()
-        response = client.get(f'/{task.pk}/close')
 
-        self.assertEqual(response.status_code, 302)
+        response = client.get('/{}/close'.format(task.pk), follow=True)
+
+        self.assertEqual(response.status_code, 200)
         task.refresh_from_db()
         self.assertTrue(task.completed)
+        self.assertContains(response, '達成')
+        self.assertContains(response, '達成率')
+
+    def test_index_includes_completion_stats(self):
+        Task.objects.create(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)), completed=True)
+        Task.objects.create(title='task2', due_at=timezone.make_aware(datetime(2024, 8, 1)))
+
+        client = Client()
+        response = client.get('/')
+
+        self.assertEqual(response.context['total_tasks'], 2)
+        self.assertEqual(response.context['completed_count'], 1)
+        self.assertEqual(response.context['completion_rate'], 50)
+
+    def test_delete_task_success(self):
+        task = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        task.save()
+        client = Client()
+
+        response = client.post('/task/{}/delete/'.format(task.pk))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Task.objects.filter(pk=task.pk).count(), 0)
+
+    def test_delete_task_not_found(self):
+        client = Client()
+        response = client.post('/task/999/delete/')
+        self.assertEqual(response.status_code, 404)
