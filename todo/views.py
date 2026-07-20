@@ -3,6 +3,7 @@ from django.http import Http404
 from django.utils.timezone import make_aware
 from django.utils.dateparse import parse_datetime
 from todo.models import Task
+from django.db.models import F
 # Create your views here.
 
 
@@ -12,14 +13,26 @@ def _get_rating_from_session(request, task_id):
 
 def index(request):
     if request.method == 'POST':
+        due_at_raw = request.POST.get('due_at')
+        due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        priority_raw = request.POST.get('priority')
+        priority = priority_raw == 'true'
         task = Task(title=request.POST['title'],
-                    due_at=make_aware(parse_datetime(request.POST['due_at'])))
+                    due_at=due_at,
+                    priority=priority)
         task.save()
 
-    if request.GET.get('order') == 'due':
-        tasks = Task.objects.order_by('due_at')
-    else:
+    # Default: order by due date (nulls last)
+    order = request.GET.get('order')
+    if order == 'due':
+        tasks = Task.objects.order_by(F('due_at').asc(nulls_last=True))
+    elif order == 'priority':
+        # Group by priority (high first) and within each group sort by due date
+        tasks = Task.objects.order_by(F('priority').desc(), F('due_at').asc(nulls_last=True))
+    elif order == 'post':
         tasks = Task.objects.order_by('-posted_at')
+    else:
+        tasks = Task.objects.order_by(F('due_at').asc(nulls_last=True))
 
     for task in tasks:
         setattr(task, 'rating_value', request.session.get(f'task_rating_{task.id}', None))
@@ -77,7 +90,10 @@ def update(request, task_id):
         raise Http404('Task does not exist')
     if request.method == 'POST':
         task.title = request.POST['title']
-        task.due_at = make_aware(parse_datetime(request.POST['due_at']))
+        due_at_raw = request.POST.get('due_at')
+        task.due_at = make_aware(parse_datetime(due_at_raw)) if due_at_raw else None
+        priority_raw = request.POST.get('priority')
+        task.priority = priority_raw == 'true'
         task.save()
         return redirect(detail, task_id)
     

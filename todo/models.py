@@ -14,6 +14,7 @@ class Task(models.Model):
         default=0,
         validators=[MinValueValidator(0), MaxValueValidator(5)],
     )
+    priority = models.BooleanField(default=False)
 
     def is_overdue(self, dt):
         if self.due_at is None:
