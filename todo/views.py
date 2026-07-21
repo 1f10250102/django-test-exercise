@@ -8,6 +8,10 @@ from django.db.models import F
 # Create your views here.
 
 
+def _get_rating_from_session(request, task_id):
+    return request.session.get(f'task_rating_{task_id}')
+
+
 def index(request):
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
@@ -52,8 +56,13 @@ def detail(request, task_id):
     except Task.DoesNotExist:
         raise Http404("Task does not exist")
 
+    show_form = request.GET.get('show_form') == '1'
+    rating_value = _get_rating_from_session(request, task_id)
     context = {
         'task': task,
+        'show_form': show_form,
+        'rating_value': rating_value,
+        'ratings': range(1, 6),
     }
     return render(request, 'todo/detail.html', context)
 
@@ -63,6 +72,15 @@ def close(request, task_id):
         task = Task.objects.get(pk=task_id)
     except Task.DoesNotExist:
         raise Http404("Task does not exist")
+
+    if request.method == 'POST':
+        rating_value = request.POST.get('rating', '0')
+        request.session[f'task_rating_{task_id}'] = rating_value
+        task.completed = True
+        task.save()
+        messages.success(request, '達成！おめでとうございます。')
+        return redirect('index')
+
     task.completed = True
     task.save()
     messages.success(request, '達成！おめでとうございます。')

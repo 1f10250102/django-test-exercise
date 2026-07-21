@@ -22,6 +22,9 @@
         {% endif %}
         {% if task.completed %}
         <li class="status-completed">Status: Completed</li>
+        {% if rating_value %}
+        <li>Self Evaluation: {{ rating_value }}★</li>
+        {% endif %}
         {% else %}
         <li class="status-not-completed">Status: Not Completed</li>
         {% endif %}
@@ -30,9 +33,23 @@
       <div class="detail-actions">
         <a href="{% url 'index' %}">Top</a>
         <a href="{% url 'delete' task.id %}">Delete</a>
-        <a href="{% url 'close' task.id %}">Close</a>
+        <a href="{% url 'detail' task.id %}?show_form=1">Close</a>
         <a href="{% url 'update' task.id %}">Edit</a>
       </div>
+
+      {% if not task.completed and show_form %}
+      <form method="post" action="{% url 'close' task.id %}">
+        {% csrf_token %}
+        <p>自己評価をしてください。</p>
+        {% for value in ratings %}
+        <label>
+          <input type="radio" name="rating" value="{{ value }}">
+          {{ value }}
+        </label>
+        {% endfor %}
+        <button type="submit">完了</button>
+      </form>
+      {% endif %}
     </div>
 
     <script>
